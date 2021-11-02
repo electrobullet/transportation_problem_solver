@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -80,6 +80,30 @@ class Data:
         """Проверка плана на вырожденность"""
         return True if np.count_nonzero(self.x) != self.m + self.n - 1 else False
 
+    def calculate_potentials(self) -> Dict[str, List[Any]]:
+        potentials = {'a': [None for _ in range(self.m)], 'b': [None for _ in range(self.n)]}
+        potentials['a'][0] = 0  # type: ignore
+
+        while None in potentials['a'] or None in potentials['b']:
+            for i in range(self.m):
+                for j in range(self.n):
+                    if self.x[i][j] != 0:
+                        if potentials['a'][i] is not None:
+                            potentials['b'][j] = self.c[i][j] - potentials['a'][i]
+                        elif potentials['b'][j] is not None:
+                            potentials['a'][i] = self.c[i][j] - potentials['b'][j]
+
+        return potentials
+
+    def is_plan_optimal(self) -> bool:
+        for i in range(self.m):
+            for j in range(self.n):
+                if self.x[i][j] == 0:
+                    if self.p['a'][i] + self.p['b'][j] > self.c[i][j]:
+                        return False
+
+        return True
+
     def calculate_cost(self) -> float:
         """Подсчет стоимости (целевой функции)."""
         return np.sum(self.c * self.x)
@@ -87,6 +111,11 @@ class Data:
     def solve(self) -> np.ndarray:
         diff = self.get_supply_demand_difference()
         logger.info(f'Разница между предложением и спросом = {diff}')
+
+        if diff == 0:
+            logger.info('Условие равновесия выполняется')
+        else:
+            logger.info('Условие равновесия не выполняется')
 
         if diff < 0:
             self.add_dummy_supplier(diff)
@@ -97,13 +126,14 @@ class Data:
 
         self.x = self.get_start_plan()
         logger.info(f'Начальный опорный план, найденный методом северо-западного угла:\n{self.x}')
+        logger.info(f'Целевая функция = {self.calculate_cost()}')
 
         if self.is_degenerate_plan():
             logger.info('План - вырожденный')
         else:
             logger.info('План - невырожденный')
-
-        logger.info(f'Целевая функция = {self.calculate_cost()}')
+            self.p = self.calculate_potentials()
+            logger.info(f'Найденные потенциалы: {self.p}')
 
         return self.x
 
@@ -113,11 +143,20 @@ if __name__ == '__main__':
         a=[4, 5, 4, 5],
         b=[3, 8, 4, 3],
         c=np.array([
-            [3, 4, 1, 2],
-            [2, 2, 4, 3],
-            [1, 1, 2, 1],
-            [1, 1, 1, 1],
+            [2, 4, 1, 3],
+            [4, 8, 2, 4],
+            [2, 2, 6, 5],
+            [0, 0, 0, 0],
         ]),
     )
 
-    data.solve()
+    data.x = np.array([
+        [0, 0, 4, 0],
+        [0, 0, 1, 5],
+        [3, 5, 0, 0],
+        [0, 1, 0, 2],
+    ])
+
+    data.p = data.calculate_potentials()
+    logger.info(data.p)
+    logger.info(data.is_plan_optimal())
