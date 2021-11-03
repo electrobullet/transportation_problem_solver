@@ -2,30 +2,25 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from logger import logger
+from logger import log, logger
 
 
 class Data:
     """
     a - обьемы поставщиков;\n
     b - обьемы потребителей;\n
-    c - матрица затрат на транспортировку единицы товара;\n
-    r - штраф за излишки/дефицит единицы товара;\n
+    c - матрица затрат на транспортировку;\n
+    r - штраф за излишки/дефицит;\n
+    (все значения в ед. товара)
     """
 
     def __init__(
-        self,
-        a: List[int],
-        b: List[int],
-        c: np.ndarray,
-        r: Optional[Dict[str, List[int]]] = None,
+        self, a: List[int], b: List[int], c: List[List[float]], r: Optional[Dict[str, List[float]]] = None,
     ) -> None:
         self.a = a
         self.b = b
-        self.c = c
-        self.r = {'a': [0 for _ in range(self.m)], 'b': [0 for _ in range(self.n)]}
-
-        logger.info(f'Дано:\na = {a}\nb = {b}\nc = \n{c}\nr = {r}')
+        self.c = np.array(c)
+        self.r = r if isinstance(r, Dict) else {'a': [0 for _ in range(self.m)], 'b': [0 for _ in range(self.n)]}
 
     @property
     def m(self) -> int:
@@ -37,22 +32,26 @@ class Data:
         """Количество потребителей (столбцов матрицы c)."""
         return len(self.b)
 
+    @log('Разница между предложением и спросом: {result}')
     def get_supply_demand_difference(self) -> int:
         """Получить разницу между спросом и предложением."""
         return sum(self.a) - sum(self.b)
 
-    def add_dummy_supplier(self, diff: int) -> None:
+    @log('Добавлен фиктивный поставщик с обьемом: {args[1]}')
+    def add_dummy_supplier(self, volume: int) -> None:
         """Добавить фиктивного поставщика."""
         e = np.ones((1, self.c.shape[1])) * self.r['b']
         self.c = np.row_stack((self.c, e))
-        self.a.append(-diff)
+        self.a.append(volume)
 
-    def add_dummy_customer(self, diff: int) -> None:
+    @log('Добавлен фиктивный потребитель с обьемом: {args[1]}')
+    def add_dummy_customer(self, volume: int) -> None:
         """Добавить фиктивного потребителя."""
         e = np.ones((self.c.shape[0], 1)) * self.r['a']
         self.c = np.column_stack((self.c, e))
-        self.b.append(diff)
+        self.b.append(volume)
 
+    @log('Начальный опорный план, полученный методом минимального элемента:\n{result}')
     def do_min_element_method(self) -> np.ndarray:
         """Получить начальный опорный план методом минимального элемента."""
         def get_min_element_position(matrix: np.ndarray) -> Tuple[int, int]:
@@ -101,6 +100,7 @@ class Data:
 
         return res
 
+    @log('Начальный опорный план, найденный методом северо-западного угла:\n{result}')
     def do_north_west_corner_method(self) -> np.ndarray:
         """Получить начальный опорный план методом северо-западного угла."""
         a = self.a.copy()
@@ -125,6 +125,11 @@ class Data:
         return res
 
     def get_start_plan(self, mode: int = 0) -> np.ndarray:
+        """
+        Получить начальный опорный план.
+        mode = 0: метод минимального элемента.
+        mode = 1: метод северо-западного угла.
+        """
         if mode == 0:
             return self.do_min_element_method()
         elif mode == 1:
@@ -132,10 +137,12 @@ class Data:
         else:
             raise ValueError('The mode must be 0 or 1.')
 
+    @log('Вырожденный план: {result}')
     def is_degenerate_plan(self) -> bool:
         """Проверка плана на вырожденность."""
         return True if np.count_nonzero(self.x) != self.m + self.n - 1 else False
 
+    @log('Потенциалы: {result}')
     def calculate_potentials(self) -> Dict[str, List[Any]]:
         """Вычисление потенциалов."""
         potentials = {'a': [None for _ in range(self.m)], 'b': [None for _ in range(self.n)]}
@@ -152,6 +159,7 @@ class Data:
 
         return potentials
 
+    @log('Оптимальный план: {result}')
     def is_plan_optimal(self) -> bool:
         """Проверка плана на оптимальность."""
         for i, j in zip(*np.nonzero(self.x == 0)):
@@ -187,72 +195,47 @@ class Data:
             else:
                 self.x[i][j] -= o
 
+    @log('Целевая функция = {result}')
     def calculate_cost(self) -> float:
         """Подсчет стоимости (целевой функции)."""
         return np.sum(self.c * self.x)
 
     def solve(self) -> np.ndarray:
         diff = self.get_supply_demand_difference()
-        logger.info(f'Разница между предложением и спросом = {diff}')
-
-        if diff == 0:
-            logger.info('Условие равновесия выполняется')
-        else:
-            logger.info('Условие равновесия не выполняется')
 
         if diff < 0:
-            self.add_dummy_supplier(diff)
-            logger.info(f'Добавлен фиктивный пункт A{self.m} с обьемом = {-diff}')
+            self.add_dummy_supplier(-diff)
         elif diff > 0:
             self.add_dummy_customer(diff)
-            logger.info(f'Добавлен фиктивный пункт B{self.n} с обьемом = {diff}')
 
         self.x = self.get_start_plan()
-        logger.info(f'Начальный опорный план, найденный методом северо-западного угла:\n{self.x}')
-        logger.info(f'Целевая функция = {self.calculate_cost()}')
 
-        if self.is_degenerate_plan():
-            logger.info('План - вырожденный')
-        else:
-            logger.info('План - невырожденный')
+        while True:
+            logger.info('')
 
-        self.p = self.calculate_potentials()
-        logger.info(f'Найденные потенциалы: {self.p}')
+            if self.is_degenerate_plan():
+                pass
 
-        if self.is_plan_optimal():
-            logger.info('План оптимален')
-            return self.x
-        else:
-            logger.info('План неоптимален')
+            self.p = self.calculate_potentials()
 
-        cycle_cells = self.do_cycle()
-        self.recalculate_plan(cycle_cells)
+            self.calculate_cost()
 
-        logger.info(f'{self.x}')
+            if self.is_plan_optimal():
+                return self.x
 
-        self.p = self.calculate_potentials()
-        logger.info(f'Найденные потенциалы: {self.p}')
-
-        if self.is_plan_optimal():
-            logger.info('План оптимален')
-        else:
-            logger.info('План неоптимален')
-
-        logger.info(f'Целевая функция = {self.calculate_cost()}')
-
-        return self.x
+            cycle_cells = self.do_cycle()
+            self.recalculate_plan(cycle_cells)
 
 
 if __name__ == '__main__':
     data = Data(
         a=[4, 6, 8],
         b=[3, 6, 5, 7],
-        c=np.array([
+        c=[
             [2, 4, 1, 3],
             [4, 8, 2, 4],
             [2, 2, 6, 5],
-        ]),
+        ],
     )
-    # L = 41
 
     data.solve()

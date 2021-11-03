@@ -12,10 +12,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def log(function):
-    def wrapper(*args, **kwargs):
-        function_result = function(*args, **kwargs)
-        logger.info(f'{function.__name__}: {function_result}')
-        return function_result
-
-    return wrapper
+def log(message):
+    def decorator(function):
+        def wrapper(*args, **kwargs):
+            function_result = function(*args, **kwargs)
+            logger.info(message.format(args=args, kwargs=kwargs, result=function_result))
+            return function_result
+        return wrapper
+    return decorator
