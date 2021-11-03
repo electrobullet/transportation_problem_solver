@@ -143,18 +143,18 @@ class Data:
         return True if np.count_nonzero(self.x) != self.m + self.n - 1 else False
 
     @log('Потенциалы: {result}')
-    def calculate_potentials(self) -> Dict[str, List[Any]]:
+    def calculate_potentials(self) -> Dict[str, np.ndarray]:
         """Вычисление потенциалов."""
-        potentials = {'a': [None for _ in range(self.m)], 'b': [None for _ in range(self.n)]}
-        potentials['a'][0] = 0  # type: ignore
+        potentials = {'a': np.full(self.m, np.inf), 'b': np.full(self.n, np.inf)}
+        potentials['a'][0] = 0
 
-        while None in potentials['a'] or None in potentials['b']:
+        while np.inf in potentials['a'] or np.inf in potentials['b']:
             for i in range(self.m):
                 for j in range(self.n):
                     if self.x[i][j] != 0:
-                        if potentials['a'][i] is not None:
+                        if potentials['a'][i] != np.inf:
                             potentials['b'][j] = self.c[i][j] - potentials['a'][i]
-                        elif potentials['b'][j] is not None:
+                        elif potentials['b'][j] != np.inf:
                             potentials['a'][i] = self.c[i][j] - potentials['b'][j]
 
         return potentials
