@@ -133,7 +133,7 @@ def find_cycle_path(x: np.ndarray, start_pos: Tuple[int, int]) -> List[Tuple[int
         res.append(posible_moves[0])
 
 
-@log('Величина пересчета: {result}')
+@log('Величина пересчета: {result}\n\nПлан после пересчета:\n{args[0]}')
 def recalculate_plan(x: np.ndarray, cycle_path: List[Tuple[int, int]]) -> int:
     """Пересчитать план. Возвращает величину пересчета."""
     o = min([x[i][j] for i, j in cycle_path[1:-1:2]])
@@ -148,7 +148,7 @@ def recalculate_plan(x: np.ndarray, cycle_path: List[Tuple[int, int]]) -> int:
 
 
 def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_method: bool = False):
-    logger.info(f'Дано:\na: {data.a}\nb: {data.b}\nc:\n{data.c}\nr:{data.r}')
+    logger.info(f'Дано:\na: {data.a}\nb: {data.b}\nc:\n{data.c}')
 
     diff = data.get_supply_demand_difference()
 
@@ -175,7 +175,6 @@ def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_
 
         cycle_path = find_cycle_path(x, data.get_best_free_cell(x, p))
         recalculate_plan(x, cycle_path)
-        logger.info(f'\nПлан после пересчета:\n{x}')
 
 
 if __name__ == '__main__':
@@ -189,4 +188,4 @@ if __name__ == '__main__':
         ],
     )
 
-    solve_transportation_problem(data, True)
+    solve_transportation_problem(data)

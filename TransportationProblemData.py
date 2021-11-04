@@ -51,7 +51,7 @@ class TransportationProblemData:
         self.c = np.column_stack((self.c, e))
         self.b.append(volume)
 
-    @log('Целевая функция = {result}')
+    @log('Целевая функция: {result}')
     def calculate_cost(self, x: np.ndarray) -> float:
         """Подсчет стоимости (целевой функции)."""
         return np.sum(self.c * x)
