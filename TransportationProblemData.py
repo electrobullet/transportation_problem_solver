@@ -19,7 +19,7 @@ class TransportationProblemData:
     ) -> None:
         self.a = a
         self.b = b
-        self.c = np.array(c)
+        self.c = np.array(c, np.float32)
         self.r = r if isinstance(r, Dict) else {'a': [0 for _ in range(self.m)], 'b': [0 for _ in range(self.n)]}
 
     @property
@@ -37,14 +37,14 @@ class TransportationProblemData:
         """Получить разницу между спросом и предложением."""
         return sum(self.a) - sum(self.b)
 
-    @log('Добавлен фиктивный поставщик с обьемом: {args[1]}')
+    @log('Добавлен фиктивный поставщик с обьемом: {args[1]}\n{args[0]}')
     def add_dummy_supplier(self, volume: int) -> None:
         """Добавить фиктивного поставщика."""
         e = np.ones((1, self.c.shape[1])) * self.r['b']
         self.c = np.row_stack((self.c, e))
         self.a.append(volume)
 
-    @log('Добавлен фиктивный потребитель с обьемом: {args[1]}')
+    @log('Добавлен фиктивный потребитель с обьемом: {args[1]}\n{args[0]}')
     def add_dummy_customer(self, volume: int) -> None:
         """Добавить фиктивного потребителя."""
         e = np.ones((self.c.shape[0], 1)) * self.r['a']
@@ -59,7 +59,7 @@ class TransportationProblemData:
     @log('Потенциалы: {result}')
     def calculate_potentials(self, x: np.ndarray) -> Dict[str, np.ndarray]:
         """Вычисление потенциалов."""
-        res = {'a': np.full(self.m, np.inf), 'b': np.full(self.n, np.inf)}
+        res = {'a': [np.inf for _ in range(self.m)], 'b': [np.inf for _ in range(self.n)]}
         res['a'][0] = 0
 
         while np.inf in res['a'] or np.inf in res['b']:
@@ -86,3 +86,6 @@ class TransportationProblemData:
     def get_best_free_cell(self, x: np.ndarray, p: Dict[str, np.ndarray]) -> Tuple[int, int]:
         free_cells = tuple(zip(*np.nonzero(x == 0)))
         return free_cells[np.argmax([p['a'][i] + p['b'][j] - self.c[i][j] for i, j in free_cells])]
+
+    def __str__(self) -> str:
+        return f'a: {self.a}\nb: {self.b}\nc:\n{self.c}\nr: {self.r}'

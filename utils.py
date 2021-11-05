@@ -16,7 +16,7 @@ def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.
         j = flat_index - i * data.n
         return (i, j)
 
-    res = np.zeros((data.m, data.n))
+    res = np.zeros((data.m, data.n), np.int32)
 
     a = data.a.copy()
     b = data.b.copy()
@@ -60,7 +60,7 @@ def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.
 @log('\nНачальный опорный план, найденный методом северо-западного угла:\n{result}')
 def get_start_plan_by_north_west_corner_method(data: TransportationProblemData) -> np.ndarray:
     """Получить начальный опорный план методом северо-западного угла."""
-    res = np.zeros((data.m, data.n))
+    res = np.zeros((data.m, data.n), np.int32)
 
     a = data.a.copy()
     b = data.b.copy()
@@ -148,7 +148,7 @@ def recalculate_plan(x: np.ndarray, cycle_path: List[Tuple[int, int]]) -> int:
 
 
 def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_method: bool = False):
-    logger.info(f'Дано:\na: {data.a}\nb: {data.b}\nc:\n{data.c}')
+    logger.info(f'Дано:\n{data}\n')
 
     diff = data.get_supply_demand_difference()
 
@@ -186,6 +186,7 @@ if __name__ == '__main__':
             [4, 8, 2, 4],
             [2, 2, 6, 5],
         ],
+        r={'a': [0, 0, 0], 'b': [1, 2, 3, 4]}
     )
 
     solve_transportation_problem(data)
