@@ -139,13 +139,12 @@ def recalculate_plan(x: np.ndarray, cycle_path: List[Tuple[int, int]]) -> int:
     o = min([x[i][j] for i, j in cycle_path[1:-1:2]])
 
     for k, (i, j) in enumerate(cycle_path[:-1]):
-        if np.isnan(o):
-            if x[i][j] == 0:
-                x[i][j] = np.nan
-            elif np.isnan(x[i][j]):
-                x[i][j] = 0
-
+        if np.isnan(o) and x[i][j] == 0:
+            x[i][j] = np.nan
             continue
+
+        if np.isnan(x[i][j]):
+            x[i][j] = 0
 
         if k % 2 == 0:
             x[i][j] += o
@@ -157,10 +156,16 @@ def recalculate_plan(x: np.ndarray, cycle_path: List[Tuple[int, int]]) -> int:
 
 @log('\nДелаем начальный опорный план невырожденным:\n{args[0]}')
 def make_start_plan_non_degenerate(x: np.ndarray) -> None:
-    for row in x:
-        if np.count_nonzero(row) == 1:
-            row[np.nonzero(row == 0)[0][0]] = np.nan
-            break
+    m, n = x.shape
+
+    for i in range(m):
+        if np.count_nonzero(x[i]) == 1:
+            j = np.nonzero(x[i])[0][0]
+
+            if np.count_nonzero(x[:, j]) == 1:
+                if np.nonzero(x[:, j])[0][0] == i:
+                    x[i][j + 1] = np.nan
+                    break
 
 
 def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_method: bool = False):
@@ -202,10 +207,10 @@ if __name__ == '__main__':
         b=[3, 6, 5, 7],
         c=[
             [2, 4, 1, 3],
-            [4, 8, 2, 4],
+            [4, 1, 2, 4],
             [2, 2, 6, 5],
         ],
-        r={'a': [0, 0, 0], 'b': [1, 2, 3, 4]}
+        r={'a': [0, 3, 1], 'b': [7, 7, 7, 7]}
     )
 
     solve_transportation_problem(data)
