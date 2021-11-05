@@ -54,7 +54,7 @@ class TransportationProblemData:
     @log('Целевая функция: {result}')
     def calculate_cost(self, x: np.ndarray) -> float:
         """Подсчет стоимости (целевой функции)."""
-        return np.sum(self.c * x)
+        return np.sum(self.c * np.nan_to_num(x))
 
     @log('Потенциалы: {result}')
     def calculate_potentials(self, x: np.ndarray) -> Dict[str, np.ndarray]:

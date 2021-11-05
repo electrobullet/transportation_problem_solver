@@ -16,7 +16,7 @@ def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.
         j = flat_index - i * data.n
         return (i, j)
 
-    res = np.zeros((data.m, data.n), np.int32)
+    res = np.zeros((data.m, data.n))
 
     a = data.a.copy()
     b = data.b.copy()
@@ -60,7 +60,7 @@ def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.
 @log('\nНачальный опорный план, найденный методом северо-западного угла:\n{result}')
 def get_start_plan_by_north_west_corner_method(data: TransportationProblemData) -> np.ndarray:
     """Получить начальный опорный план методом северо-западного угла."""
-    res = np.zeros((data.m, data.n), np.int32)
+    res = np.zeros((data.m, data.n))
 
     a = data.a.copy()
     b = data.b.copy()
@@ -139,12 +139,28 @@ def recalculate_plan(x: np.ndarray, cycle_path: List[Tuple[int, int]]) -> int:
     o = min([x[i][j] for i, j in cycle_path[1:-1:2]])
 
     for k, (i, j) in enumerate(cycle_path[:-1]):
+        if np.isnan(o):
+            if x[i][j] == 0:
+                x[i][j] = np.nan
+            elif np.isnan(x[i][j]):
+                x[i][j] = 0
+
+            continue
+
         if k % 2 == 0:
             x[i][j] += o
         else:
             x[i][j] -= o
 
     return o
+
+
+@log('\nДелаем начальный опорный план невырожденным:\n{args[0]}')
+def make_start_plan_non_degenerate(x: np.ndarray) -> None:
+    for row in x:
+        if np.count_nonzero(row) == 1:
+            row[np.nonzero(row == 0)[0][0]] = np.nan
+            break
 
 
 def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_method: bool = False):
@@ -162,10 +178,10 @@ def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_
     else:
         x = get_start_plan_by_min_element_method(data)
 
-    while True:
-        if is_degenerate_plan(x):
-            return
+    if is_degenerate_plan(x):
+        make_start_plan_non_degenerate(x)
 
+    while True:
         data.calculate_cost(x)
 
         p = data.calculate_potentials(x)
@@ -175,6 +191,9 @@ def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_
 
         cycle_path = find_cycle_path(x, data.get_best_free_cell(x, p))
         recalculate_plan(x, cycle_path)
+
+        if is_degenerate_plan(x):
+            return
 
 
 if __name__ == '__main__':
