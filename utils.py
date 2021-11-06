@@ -137,10 +137,23 @@ def find_cycle_path(x: np.ndarray, start_pos: Tuple[int, int]) -> List[Tuple[int
 def recalculate_plan(x: np.ndarray, cycle_path: List[Tuple[int, int]]) -> int:
     """Пересчитать план. Возвращает величину пересчета."""
     o = min([x[i][j] for i, j in cycle_path[1:-1:2]])
+    minus_cells_equal_to_o = [(i, j) for i, j in cycle_path[1:-1:2] if x[i][j] == o]
+
+    if np.isnan(o):
+        i, j = cycle_path[0]
+        x[i][j] = np.nan
+        i, j = minus_cells_equal_to_o[0]
+        x[i][j] = 0
+
+        return o
 
     for k, (i, j) in enumerate(cycle_path[:-1]):
-        if np.isnan(o) and x[i][j] == 0:
-            x[i][j] = np.nan
+        if (i, j) in minus_cells_equal_to_o:
+            if minus_cells_equal_to_o.index((i, j)) == 0:
+                x[i][j] = 0
+            else:
+                x[i][j] = np.nan
+
             continue
 
         if np.isnan(x[i][j]):
@@ -158,14 +171,19 @@ def recalculate_plan(x: np.ndarray, cycle_path: List[Tuple[int, int]]) -> int:
 def make_start_plan_non_degenerate(x: np.ndarray) -> None:
     m, n = x.shape
 
-    for i in range(m):
-        if np.count_nonzero(x[i]) == 1:
-            j = np.nonzero(x[i])[0][0]
+    while np.count_nonzero(x) != m + n - 1:
+        for i in range(m):
+            if np.count_nonzero(x[i]) == 1:
+                j = np.nonzero(x[i])[0][0]
 
-            if np.count_nonzero(x[:, j]) == 1:
-                if np.nonzero(x[:, j])[0][0] == i:
-                    x[i][j + 1] = np.nan
-                    break
+                if np.count_nonzero(x[:, j]) == 1:
+                    if np.nonzero(x[:, j])[0][0] == i:
+                        if i < m - 1:
+                            x[i + 1][j] = np.nan
+                        else:
+                            x[i - 1][j] = np.nan
+
+                        break
 
 
 def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_method: bool = False):
