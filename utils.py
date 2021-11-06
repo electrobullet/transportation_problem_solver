@@ -137,7 +137,7 @@ def find_cycle_path(x: np.ndarray, start_pos: Tuple[int, int]) -> List[Tuple[int
 def recalculate_plan(x: np.ndarray, cycle_path: List[Tuple[int, int]]) -> int:
     """Пересчитать план. Возвращает величину пересчета."""
     o = min([x[i][j] for i, j in cycle_path[1:-1:2]])
-    minus_cells_equal_to_o = [(i, j) for i, j in cycle_path[1:-1:2] if x[i][j] == o]
+    minus_cells_equal_to_o = [(i, j) for i, j in cycle_path[1:-1:2] if np.isnan(x[i][j]) or x[i][j] == o]
 
     if np.isnan(o):
         i, j = cycle_path[0]
@@ -221,14 +221,17 @@ def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_
 
 if __name__ == '__main__':
     data = TransportationProblemData(
-        a=[4, 6, 8],
-        b=[3, 6, 5, 7],
-        c=[
-            [2, 4, 1, 3],
-            [4, 1, 2, 4],
-            [2, 2, 6, 5],
-        ],
-        r={'a': [0, 3, 1], 'b': [7, 7, 7, 7]}
+        a=np.array([16, 15, 18, 19, 17, 20, 16]) * 10000,
+        b=np.array([10, 10, 12, 16, 20, 25, 22, 28]) * 10000,
+        c=np.array([
+            [120, 180, 10000, 100, 110, 140, 160, 180],
+            [300, 100, 180, 150, 140, 160, 125, 175],
+            [200, 250, 170, 160, 190, 175, 180, 210],
+            [140, 275, 190, 130, 200, 120, 195, 120],
+            [190, 120, 215, 190, 210, 200, 154, 160],
+            [200, 140, 170, 200, 170, 135, 137, 140],
+            [220, 160, 155, 210, 145, 190, 207, 174],
+        ]),
     )
 
     solve_transportation_problem(data)

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 
@@ -15,12 +15,12 @@ class TransportationProblemData:
     """
 
     def __init__(
-        self, a: List[int], b: List[int], c: List[List[float]], r: Optional[Dict[str, List[float]]] = None,
+        self, a: np.array, b: np.array, c: np.array, r: Optional[Dict[str, np.array]] = None,
     ) -> None:
         self.a = a
         self.b = b
-        self.c = np.array(c, np.float32)
-        self.r = r if isinstance(r, Dict) else {'a': [0 for _ in range(self.m)], 'b': [0 for _ in range(self.n)]}
+        self.c = c
+        self.r = r if r is not None else {'a': np.full(self.m, 0), 'b': np.full(self.n, 0)}
 
     @property
     def m(self) -> int:
@@ -42,14 +42,14 @@ class TransportationProblemData:
         """Добавить фиктивного поставщика."""
         e = np.ones((1, self.c.shape[1])) * self.r['b']
         self.c = np.row_stack((self.c, e))
-        self.a.append(volume)
+        self.a = np.append(self.a, volume)
 
     @log('Добавлен фиктивный потребитель с обьемом: {args[1]}\n{args[0]}')
     def add_dummy_customer(self, volume: int) -> None:
         """Добавить фиктивного потребителя."""
         e = np.ones((self.c.shape[0], 1)) * self.r['a']
         self.c = np.column_stack((self.c, e))
-        self.b.append(volume)
+        self.b = np.append(self.b, volume)
 
     @log('Целевая функция: {result}')
     def calculate_cost(self, x: np.ndarray) -> float:
