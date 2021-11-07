@@ -12,8 +12,8 @@ def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.
     def get_min_element_position(matrix: np.ndarray) -> Tuple[int, int]:
         """Получить позицию минимального элемента матрицы."""
         flat_index = np.argmin(matrix)
-        i = flat_index // data.m
-        j = flat_index - i * data.n
+        i = flat_index // data.n
+        j = flat_index - i * data.m
         return (i, j)
 
     res = np.zeros((data.m, data.n))
