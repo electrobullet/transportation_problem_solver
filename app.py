@@ -1,67 +1,80 @@
-import remi.gui as gui
-from remi import App, start
+import numpy as np
+from flask import Flask, redirect, render_template, request, url_for
+from flask_wtf import FlaskForm
+from wtforms import FieldList, StringField, SubmitField
+
+from config import Config
+from TransportationProblemData import TransportationProblemData
+from utils import solve_transportation_problem
 
 
-class MyApp(App):
-    def __init__(self, *args) -> None:
-        super(MyApp, self).__init__(*args)
+class SetSizeForm(FlaskForm):
+    m_field = StringField('m_field')
+    n_field = StringField('n_field')
+    continue_button = SubmitField('Продолжить')
 
-    def main(self) -> gui.Widget:
-        self.num_of_rows = 3
-        self.num_of_columns = 4
 
-        grid_box = gui.GridBox()
-        self.get_start_layout(grid_box)
+class SetDataForm(FlaskForm):
+    a_field = FieldList(StringField(), 'a_matrix')
+    b_field = FieldList(StringField(), 'b_matrix')
+    c_field = FieldList(FieldList(StringField()), 'c_matrix')
+    continue_button = SubmitField('Продолжить')
 
-        return grid_box
 
-    def get_matrix_layout(self, grid_box: gui.GridBox) -> None:
-        widgets = {
-            f'c_{i}_{j}': gui.Input()
-            for i in range(self.num_of_rows)
-            for j in range(self.num_of_columns)
-        }
-        widgets['button'] = gui.Button('Compute')
+app = Flask(__name__)
+app.config.from_object(Config)
 
-        grid_box.empty()
-        grid_box.append(widgets)
 
-        layout = [
-            [f'c_{i}_{j}' for j in range(self.num_of_columns)]
-            for i in range(self.num_of_rows)
-        ]
-        layout.append(['button'] * self.num_of_columns)
+@app.route('/', methods=['GET', 'POST'])
+def set_size():
+    form = SetSizeForm(data={'m_field': '2', 'n_field': '2'})
 
-        grid_box.define_grid(layout)
+    if form.validate_on_submit():
+        return redirect(url_for('set_data', m=form.m_field.data, n=form.n_field.data))
 
-    def get_start_layout(self, grid_box: gui.GridBox) -> None:
-        def on_button_click() -> None:
-            self.num_of_rows = int(widgets['num_of_rows'].get_value())
-            self.num_of_columns = int(widgets['num_of_columns'].get_value())
+    return render_template('set_size.html', title='Step 1', form=form)
 
-            self.get_matrix_layout(grid_box)
 
-        widgets = {
-            'row_label': gui.Label('Number of rows (suppliers)'),
-            'num_of_rows': gui.Input(default_value=self.num_of_rows),
-            'column_label': gui.Label('Number of columns (clients)'),
-            'num_of_columns': gui.Input(default_value=self.num_of_columns),
-            'button': gui.Button('Continue'),
-        }
+@app.route('/data', methods=['GET', 'POST'])
+def set_data():
+    m = int(request.args.get('m'))
+    n = int(request.args.get('n'))
 
-        widgets['button'].onclick.do(lambda _: on_button_click())
+    form = SetDataForm(data={
+        'a_field': ['' for _ in range(m)],
+        'b_field': ['' for _ in range(n)],
+        'c_field': [['' for _ in range(n)] for _ in range(m)],
+    })
 
-        grid_box.empty()
-        grid_box.append(widgets)
+    if form.validate_on_submit():
+        return redirect(url_for('get_report'), code=307)
 
-        layout = [
-            ['row_label', 'num_of_rows'],
-            ['column_label', 'num_of_columns'],
-            ['button', 'button'],
-        ]
+    return render_template('set_data.html', title='Step 2', form=form)
 
-        grid_box.define_grid(layout)
+
+@app.route('/report', methods=['GET', 'POST'])
+def get_report():
+    a = []
+    b = []
+    c = []
+
+    for key in request.form:
+        if 'a_field' in key:
+            a.append(request.form.get(key))
+        elif 'b_field' in key:
+            b.append(request.form.get(key))
+        elif 'c_field' in key:
+            c.append(request.form.get(key))
+
+    a = np.array(a, np.int16)
+    b = np.array(b, np.int16)
+    c = np.reshape(np.array(c, np.float32), (len(a), len(b)))
+
+    data = TransportationProblemData(a, b, c)
+    report = solve_transportation_problem(data)
+
+    return render_template('report.html', title='Report', report=report)
 
 
 if __name__ == '__main__':
-    start(MyApp, debug=True, address='0.0.0.0', port=8001, start_browser=False)
+    app.run()

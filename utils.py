@@ -186,37 +186,60 @@ def make_start_plan_non_degenerate(x: np.ndarray) -> None:
                         break
 
 
-def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_method: bool = False):
+def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_method: bool = False) -> List[str]:
     logger.info(f'Дано:\n{data}\n')
+    report = [f'Дано:\n{data}\n', '-']
 
     diff = data.get_supply_demand_difference()
+    report.append(f'Разница между предложением и спросом: {diff}')
 
     if diff < 0:
         data.add_dummy_supplier(-diff)
+        report.append(f'Добавлен фиктивный поставщик с обьемом: {-diff}\n{data}')
     elif diff > 0:
         data.add_dummy_customer(diff)
+        report.append(f'Добавлен фиктивный потребитель с обьемом: {-diff}\n{data}')
+
+    report.append('-')
 
     if use_nw_corner_method:
         x = get_start_plan_by_north_west_corner_method(data)
+        report.append(f'Начальный опорный план, найденный методом северо-западного угла:\n{x}')
     else:
         x = get_start_plan_by_min_element_method(data)
+        report.append(f'Начальный опорный план, полученный методом минимального элемента:\n{x}')
 
-    if is_degenerate_plan(x):
+    check_res = is_degenerate_plan(x)
+    report.append(f'Вырожденный план: {check_res}')
+    if check_res:
         make_start_plan_non_degenerate(x)
+        report.append('-')
+        report.append(f'Делаем начальный опорный план невырожденным:\n{x}')
 
     while True:
-        data.calculate_cost(x)
+        cost = data.calculate_cost(x)
+        report.append(f'Целевая функция: {cost}')
 
         p = data.calculate_potentials(x)
+        report.append(f'Потенциалы: {p}')
 
-        if data.is_plan_optimal(x, p):
-            return x
+        check_res = data.is_plan_optimal(x, p)
+        report.append(f'Оптимальный план: {check_res}')
+        if check_res:
+            return '\n'.join(report).split('\n')
 
         cycle_path = find_cycle_path(x, data.get_best_free_cell(x, p))
-        recalculate_plan(x, cycle_path)
+        report.append(f'Цикл пересчета: {cycle_path}')
 
-        if is_degenerate_plan(x):
-            return
+        o = recalculate_plan(x, cycle_path)
+        report.append(f'Величина пересчета: {o}')
+        report.append('-')
+        report.append(f'План после пересчета:\n{x}')
+
+        check_res = is_degenerate_plan(x)
+        report.append(f'Вырожденный план: {check_res}')
+        if check_res:
+            return '\n'.join(report).split('\n')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form action="" method="post" novalidate>
+    {{ form.hidden_tag() }}
+
+    <p>Обьемы поставщиков:</p>
+    <p>
+        {% for field in form.a_field %}
+        {{ field(size=4) }}
+        {% endfor %}
+    </p>
+
+    <p>Обьемы потребителей:</p>
+    <p>
+        {% for field in form.b_field %}
+        {{ field(size=4) }}
+        {% endfor %}
+    </p>
+
+    <p>Матрица тарифов:</p>
+    <p>
+        {% for row in form.c_field %}
+        {% for cell in row %}
+        {{ cell(size=4) }}
+        {% endfor %}
+        <br>
+        {% endfor %}
+    </p>
+
+    <p>{{ form.continue_button() }}</p>
+
+</form>
+{% endblock %}

@@ -1,15 +1,14 @@
 import logging
 
 file_handler = logging.FileHandler('log.txt', 'w', 'utf-8')
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(logging.Formatter('%(message)s'))
+
 console_handler = logging.StreamHandler()
 
-logging.basicConfig(
-    handlers=(file_handler, console_handler),
-    format='%(message)s',
-    level=logging.INFO,
-)
-
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(file_handler)
 
 
 def log(message):

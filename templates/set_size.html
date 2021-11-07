@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form action="" method="post" novalidate>
+    {{ form.hidden_tag() }}
+
+    <p>Количество поставщиков (m): {{ form.m_field(size=2) }}</p>
+
+    <p>Количество потребителей (n): {{ form.n_field(size=2) }}</p>
+
+    <p>{{ form.continue_button() }}</p>
+
+</form>
+{% endblock %}
