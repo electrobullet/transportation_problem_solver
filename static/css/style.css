@@ -1,0 +1,11 @@
+body{
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+table{
+    text-align: center;
+}
+
+td{
+    border: 1px solid black;
+}

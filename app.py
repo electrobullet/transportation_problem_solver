@@ -1,11 +1,12 @@
 import numpy as np
 from flask import Flask, redirect, render_template, request, url_for
+from flask.templating import render_template_string
 from flask_wtf import FlaskForm
 from wtforms import FieldList, StringField, SubmitField
 
 from config import Config
 from TransportationProblemData import TransportationProblemData
-from utils import solve_transportation_problem
+from utils import get_report_html, solve_transportation_problem
 
 
 class SetSizeForm(FlaskForm):
@@ -60,20 +61,20 @@ def get_report():
 
     for key in request.form:
         if 'a_field' in key:
-            a.append(request.form.get(key))
+            a.append(int(request.form.get(key)))
         elif 'b_field' in key:
-            b.append(request.form.get(key))
+            b.append(int(request.form.get(key)))
         elif 'c_field' in key:
-            c.append(request.form.get(key))
+            c.append(float(request.form.get(key)))
 
-    a = np.array(a, np.int16)
-    b = np.array(b, np.int16)
-    c = np.reshape(np.array(c, np.float32), (len(a), len(b)))
+    a = np.array(a)
+    b = np.array(b)
+    c = np.array(c).reshape(len(a), len(b))
 
     data = TransportationProblemData(a, b, c)
     report = solve_transportation_problem(data)
 
-    return render_template('report.html', title='Report', report=report)
+    return render_template_string(get_report_html(report), title='Report')
 
 
 if __name__ == '__main__':

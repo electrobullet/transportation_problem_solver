@@ -1,8 +1,8 @@
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import numpy as np
 
-from logger import log, logger
+from logger import log
 from TransportationProblemData import TransportationProblemData
 
 
@@ -187,34 +187,47 @@ def make_start_plan_non_degenerate(x: np.ndarray) -> None:
 
 
 def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_method: bool = False) -> List[str]:
-    logger.info(f'Дано:\n{data}\n')
-    report = [f'Дано:\n{data}\n', '-']
+    report = [
+        'Обьемы поставщиков:', data.a,
+        'Обьемы потребителей:', data.b,
+        'Матрица тарифов:', data.c,
+        '',
+    ]
 
     diff = data.get_supply_demand_difference()
     report.append(f'Разница между предложением и спросом: {diff}')
 
     if diff < 0:
         data.add_dummy_supplier(-diff)
-        report.append(f'Добавлен фиктивный поставщик с обьемом: {-diff}\n{data}')
+        report.extend([
+            f'Добавлен фиктивный поставщик с обьемом: {-diff}',
+            'Обьемы поставщиков:', data.a,
+            'Обьемы потребителей:', data.b,
+            'Матрица тарифов:', data.c,
+            '',
+        ])
     elif diff > 0:
         data.add_dummy_customer(diff)
-        report.append(f'Добавлен фиктивный потребитель с обьемом: {-diff}\n{data}')
-
-    report.append('-')
+        report.extend([
+            f'Добавлен фиктивный потребитель с обьемом: {-diff}',
+            'Обьемы поставщиков:', data.a,
+            'Обьемы потребителей:', data.b,
+            'Матрица тарифов:', data.c,
+            '',
+        ])
 
     if use_nw_corner_method:
         x = get_start_plan_by_north_west_corner_method(data)
-        report.append(f'Начальный опорный план, найденный методом северо-западного угла:\n{x}')
+        report.extend(['Начальный опорный план, найденный методом северо-западного угла:', x.copy()])
     else:
         x = get_start_plan_by_min_element_method(data)
-        report.append(f'Начальный опорный план, полученный методом минимального элемента:\n{x}')
+        report.extend(['Начальный опорный план, полученный методом минимального элемента:', x.copy()])
 
     check_res = is_degenerate_plan(x)
-    report.append(f'Вырожденный план: {check_res}')
+    report.extend([f'Вырожденный план: {check_res}'])
     if check_res:
         make_start_plan_non_degenerate(x)
-        report.append('-')
-        report.append(f'Делаем начальный опорный план невырожденным:\n{x}')
+        report.extend(['', 'Делаем начальный опорный план невырожденным:', x.copy()])
 
     while True:
         cost = data.calculate_cost(x)
@@ -226,20 +239,50 @@ def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_
         check_res = data.is_plan_optimal(x, p)
         report.append(f'Оптимальный план: {check_res}')
         if check_res:
-            return '\n'.join(report).split('\n')
+            return report
 
         cycle_path = find_cycle_path(x, data.get_best_free_cell(x, p))
         report.append(f'Цикл пересчета: {cycle_path}')
 
         o = recalculate_plan(x, cycle_path)
-        report.append(f'Величина пересчета: {o}')
-        report.append('-')
-        report.append(f'План после пересчета:\n{x}')
+        report.extend([f'Величина пересчета: {o}', '', 'План после пересчета:', x.copy()])
 
-        check_res = is_degenerate_plan(x)
-        report.append(f'Вырожденный план: {check_res}')
-        if check_res:
-            return '\n'.join(report).split('\n')
+
+def get_report_html(report: List[Any]) -> str:
+    report_html = []
+
+    with open('templates/base.html', encoding='utf-8') as f:
+        base_html = f.readlines()
+
+    for element in report:
+        if isinstance(element, str):
+            report_html.append(f'<p>{element}</p>' if element != '' else '<hr>')
+
+        elif isinstance(element, np.ndarray):
+            if len(element.shape) == 1:
+                report_html.append('<table>')
+                report_html.append('<tr>')
+
+                for x in element:
+                    report_html.append(f'<td>{x}</td>')
+
+                report_html.append('</tr>')
+                report_html.append('</table>')
+
+            elif len(element.shape) == 2:
+                report_html.append('<table>')
+
+                for row in element:
+                    report_html.append('<tr>')
+
+                    for x in row:
+                        report_html.append(f'<td>{x}</td>')
+
+                    report_html.append('</tr>')
+
+                report_html.append('</table>')
+
+    return ''.join(base_html).replace('{% block content %}{% endblock %}', ''.join(report_html))
 
 
 if __name__ == '__main__':
