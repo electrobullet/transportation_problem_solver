@@ -60,7 +60,7 @@ class TransportationProblemData:
     def calculate_potentials(self, x: np.ndarray) -> Dict[str, np.ndarray]:
         """Вычисление потенциалов."""
         res = {'a': [np.inf for _ in range(self.m)], 'b': [np.inf for _ in range(self.n)]}
-        res['a'][0] = 0
+        res['a'][0] = 0.0
 
         while np.inf in res['a'] or np.inf in res['b']:
             for i in range(self.m):

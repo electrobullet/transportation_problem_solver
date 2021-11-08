@@ -186,48 +186,31 @@ def make_start_plan_non_degenerate(x: np.ndarray) -> None:
                         break
 
 
-def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_method: bool = False) -> List[str]:
-    report = [
-        'Обьемы поставщиков:', data.a,
-        'Обьемы потребителей:', data.b,
-        'Матрица тарифов:', data.c,
-        '',
-    ]
+def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_method: bool = False) -> List[Any]:
+    report = ['Дано:', (data.c, data.a, data.b), '']
 
     diff = data.get_supply_demand_difference()
     report.append(f'Разница между предложением и спросом: {diff}')
 
     if diff < 0:
         data.add_dummy_supplier(-diff)
-        report.extend([
-            f'Добавлен фиктивный поставщик с обьемом: {-diff}',
-            'Обьемы поставщиков:', data.a,
-            'Обьемы потребителей:', data.b,
-            'Матрица тарифов:', data.c,
-            '',
-        ])
+        report.extend([f'Добавлен фиктивный поставщик с обьемом: {-diff}', (data.c, data.a, data.b), ''])
     elif diff > 0:
         data.add_dummy_customer(diff)
-        report.extend([
-            f'Добавлен фиктивный потребитель с обьемом: {-diff}',
-            'Обьемы поставщиков:', data.a,
-            'Обьемы потребителей:', data.b,
-            'Матрица тарифов:', data.c,
-            '',
-        ])
+        report.extend([f'Добавлен фиктивный потребитель с обьемом: {-diff}', (data.c, data.a, data.b), ''])
 
     if use_nw_corner_method:
         x = get_start_plan_by_north_west_corner_method(data)
-        report.extend(['Начальный опорный план, найденный методом северо-западного угла:', x.copy()])
+        report.extend(['Начальный опорный план, найденный методом северо-западного угла:', (x.copy(), data.a, data.b)])
     else:
         x = get_start_plan_by_min_element_method(data)
-        report.extend(['Начальный опорный план, полученный методом минимального элемента:', x.copy()])
+        report.extend(['Начальный опорный план, полученный методом минимального элемента:', (x.copy(), data.a, data.b)])
 
     check_res = is_degenerate_plan(x)
     report.extend([f'Вырожденный план: {check_res}'])
     if check_res:
         make_start_plan_non_degenerate(x)
-        report.extend(['', 'Делаем начальный опорный план невырожденным:', x.copy()])
+        report.extend(['', 'Делаем начальный опорный план невырожденным:', (x.copy(), data.a, data.b)])
 
     while True:
         cost = data.calculate_cost(x)
@@ -244,10 +227,10 @@ def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_
 
         cycle_path = find_cycle_path(x, data.get_best_free_cell(x, p))
         report.append(f'Цикл пересчета: {cycle_path}')
-        report.append((x.copy(), cycle_path))
+        report.append((x.copy(), cycle_path, data.a, data.b))
 
         o = recalculate_plan(x, cycle_path)
-        report.extend([f'Величина пересчета: {o}', '', 'План после пересчета:', x.copy()])
+        report.extend([f'Величина пересчета: {o}', '', 'План после пересчета:', (x.copy(), data.a, data.b)])
 
 
 def get_report_html(report: List[Any]) -> str:
@@ -260,57 +243,34 @@ def get_report_html(report: List[Any]) -> str:
         if isinstance(element, str):
             report_html.append(f'<p>{element}</p>' if element != '' else '<hr>')
 
-        elif isinstance(element, np.ndarray):
-            if len(element.shape) == 1:
-                report_html.append('<table>')
-                report_html.append('<tr>')
-
-                for x in element:
-                    report_html.append(f'<td>{x}</td>')
-
-                report_html.append('</tr>')
-                report_html.append('</table>')
-
-            elif len(element.shape) == 2:
-                report_html.append('<table>')
-
-                for row in element:
-                    report_html.append('<tr>')
-
-                    for x in row:
-                        report_html.append(f'<td>{x}</td>')
-
-                    report_html.append('</tr>')
-
-                report_html.append('</table>')
-
-        elif isinstance(element, tuple) and isinstance(element[1], list):
-            matrix, cycle_cells = element[0], element[1][:-1]
+        elif isinstance(element[0], np.ndarray) and isinstance(element[1], np.ndarray) and (
+            isinstance(element[2], np.ndarray)
+        ):
+            matrix, a, b = element
             m, n = matrix.shape
 
             report_html.append('<table>')
 
-            for i, row in enumerate(matrix):
+            for i in range(m + 1):
                 report_html.append('<tr>')
 
-                for j, x in enumerate(row):
-                    color = 'white'
-
-                    if (i, j) in cycle_cells:
-                        if cycle_cells.index((i, j)) == 0:
-                            color = 'yellow'
-                        elif cycle_cells.index((i, j)) % 2:
-                            color = 'red'
-                        else:
-                            color = 'lime'
-
-                    report_html.append(f'<td style="background:{color};">{x}</td>')
+                for j in range(n + 1):
+                    if i == 0 and j == 0:
+                        report_html.append('<td></td>')
+                    elif i == 0 and j > 0:
+                        report_html.append(f'<td style="text-align: left;">b{j} = {b[j-1]}</td>')
+                    elif j == 0 and i > 0:
+                        report_html.append(f'<td style="text-align: left;">a{i} = {a[i-1]}</td>')
+                    else:
+                        report_html.append(f'<td>{matrix[i-1][j-1]}</td>')
 
                 report_html.append('</tr>')
 
             report_html.append('</table>')
 
-        elif isinstance(element, tuple) and isinstance(element[1], dict):
+        elif isinstance(element[0], np.ndarray) and isinstance(element[1], dict) and (
+            isinstance(element[2], np.ndarray)
+        ):
             cost, potentials, plan = element
             m, n = cost.shape
 
@@ -336,6 +296,42 @@ def get_report_html(report: List[Any]) -> str:
                             color = 'white'
 
                         report_html.append(f'<td style="background:{color};">{cost[i-1][j-1]}</td>')
+
+                report_html.append('</tr>')
+
+            report_html.append('</table>')
+
+        elif isinstance(element[0], np.ndarray) and isinstance(element[1], list) and (
+            isinstance(element[2], np.ndarray) and isinstance(element[3], np.ndarray)
+        ):
+            matrix, cycle_cells, a, b = element
+            cycle_cells = cycle_cells[:-1]
+            m, n = matrix.shape
+
+            report_html.append('<table>')
+
+            for i in range(m + 1):
+                report_html.append('<tr>')
+
+                for j in range(n + 1):
+                    if i == 0 and j == 0:
+                        report_html.append('<td></td>')
+                    elif i == 0 and j > 0:
+                        report_html.append(f'<td style="text-align: left;">b{j} = {b[j-1]}</td>')
+                    elif j == 0 and i > 0:
+                        report_html.append(f'<td style="text-align: left;">a{i} = {a[i-1]}</td>')
+                    else:
+                        color = 'white'
+
+                        if (i-1, j-1) in cycle_cells:
+                            if cycle_cells.index((i-1, j-1)) == 0:
+                                color = 'yellow'
+                            elif cycle_cells.index((i-1, j-1)) % 2:
+                                color = 'red'
+                            else:
+                                color = 'lime'
+
+                        report_html.append(f'<td style="background:{color};">{matrix[i-1][j-1]}</td>')
 
                 report_html.append('</tr>')
 
