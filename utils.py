@@ -235,6 +235,7 @@ def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_
 
         p = data.calculate_potentials(x)
         report.append(f'Потенциалы: {p}')
+        report.append((data.c, p, x.copy()))
 
         check_res = data.is_plan_optimal(x, p)
         report.append(f'Оптимальный план: {check_res}')
@@ -243,6 +244,7 @@ def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_
 
         cycle_path = find_cycle_path(x, data.get_best_free_cell(x, p))
         report.append(f'Цикл пересчета: {cycle_path}')
+        report.append((x.copy(), cycle_path))
 
         o = recalculate_plan(x, cycle_path)
         report.extend([f'Величина пересчета: {o}', '', 'План после пересчета:', x.copy()])
@@ -281,6 +283,63 @@ def get_report_html(report: List[Any]) -> str:
                     report_html.append('</tr>')
 
                 report_html.append('</table>')
+
+        elif isinstance(element, tuple) and isinstance(element[1], list):
+            matrix, cycle_cells = element[0], element[1][:-1]
+            m, n = matrix.shape
+
+            report_html.append('<table>')
+
+            for i, row in enumerate(matrix):
+                report_html.append('<tr>')
+
+                for j, x in enumerate(row):
+                    color = 'white'
+
+                    if (i, j) in cycle_cells:
+                        if cycle_cells.index((i, j)) == 0:
+                            color = 'yellow'
+                        elif cycle_cells.index((i, j)) % 2:
+                            color = 'red'
+                        else:
+                            color = 'lime'
+
+                    report_html.append(f'<td style="background:{color};">{x}</td>')
+
+                report_html.append('</tr>')
+
+            report_html.append('</table>')
+
+        elif isinstance(element, tuple) and isinstance(element[1], dict):
+            cost, potentials, plan = element
+            m, n = cost.shape
+
+            report_html.append('<table>')
+
+            for i in range(m + 1):
+                report_html.append('<tr>')
+
+                for j in range(n + 1):
+                    if i == 0 and j == 0:
+                        report_html.append('<td></td>')
+                    elif i == 0 and j > 0:
+                        report_html.append(f'<td style="text-align: left;">β{j} = {potentials["b"][j-1]}</td>')
+                    elif j == 0 and i > 0:
+                        report_html.append(f'<td style="text-align: left;">α{i} = {potentials["a"][i-1]}</td>')
+                    else:
+                        if plan[i-1][j-1] == 0:
+                            if potentials['a'][i-1] + potentials['b'][j-1] > cost[i-1][j-1]:
+                                color = 'red'
+                            else:
+                                color = 'lime'
+                        else:
+                            color = 'white'
+
+                        report_html.append(f'<td style="background:{color};">{cost[i-1][j-1]}</td>')
+
+                report_html.append('</tr>')
+
+            report_html.append('</table>')
 
     return ''.join(base_html).replace('{% block content %}{% endblock %}', ''.join(report_html))
 
