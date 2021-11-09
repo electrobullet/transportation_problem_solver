@@ -224,7 +224,7 @@ def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_
         check_res = data.is_plan_optimal(x, p)
         report.append(f'Оптимальный план: {check_res}')
         if check_res:
-            report.extend(['', 'Ответ:', (x.copy(), data.a, data.b)])
+            report.extend(['', 'Ответ:', (x.copy(), data.a, data.b), f'Целевая функция: {cost}'])
             return report
 
         cycle_path = find_cycle_path(x, data.get_best_free_cell(x, p))
