@@ -191,6 +191,7 @@ def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_
 
     diff = data.get_supply_demand_difference()
     report.append(f'Разница между предложением и спросом: {diff}')
+    report.append(f'Условие равновесия: {True if diff == 0 else False}')
 
     if diff < 0:
         data.add_dummy_supplier(-diff)
