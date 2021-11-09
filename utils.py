@@ -13,7 +13,7 @@ def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.
         """Получить позицию минимального элемента матрицы."""
         flat_index = np.argmin(matrix)
         i = flat_index // data.n
-        j = flat_index - i * data.m
+        j = flat_index - i * data.n
         return (i, j)
 
     res = np.zeros((data.m, data.n))
@@ -197,7 +197,7 @@ def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_
         report.extend([f'Добавлен фиктивный поставщик с обьемом: {-diff}', (data.c, data.a, data.b), ''])
     elif diff > 0:
         data.add_dummy_customer(diff)
-        report.extend([f'Добавлен фиктивный потребитель с обьемом: {-diff}', (data.c, data.a, data.b), ''])
+        report.extend([f'Добавлен фиктивный потребитель с обьемом: {diff}', (data.c, data.a, data.b), ''])
 
     if use_nw_corner_method:
         x = get_start_plan_by_north_west_corner_method(data)

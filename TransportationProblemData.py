@@ -40,14 +40,14 @@ class TransportationProblemData:
     @log('Добавлен фиктивный поставщик с обьемом: {args[1]}\n{args[0]}')
     def add_dummy_supplier(self, volume: int) -> None:
         """Добавить фиктивного поставщика."""
-        e = np.ones((1, self.c.shape[1])) * self.r['b']
+        e = np.ones(self.n) * self.r['b']
         self.c = np.row_stack((self.c, e))
         self.a = np.append(self.a, volume)
 
     @log('Добавлен фиктивный потребитель с обьемом: {args[1]}\n{args[0]}')
     def add_dummy_customer(self, volume: int) -> None:
         """Добавить фиктивного потребителя."""
-        e = np.ones((self.c.shape[0], 1)) * self.r['a']
+        e = np.ones(self.m) * self.r['a']
         self.c = np.column_stack((self.c, e))
         self.b = np.append(self.b, volume)
 
