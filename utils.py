@@ -2,12 +2,10 @@ from typing import List, Tuple
 
 import numpy as np
 
-from logger import log
 from report import get_html_report, save_html_string_to_file
 from TransportationProblemData import TransportationProblemData
 
 
-@log('\nНачальный опорный план, полученный методом минимального элемента:\n{result}')
 def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.ndarray:
     """Получить начальный опорный план методом минимального элемента."""
     def get_min_element_position(matrix: np.ndarray) -> Tuple[int, int]:
@@ -58,7 +56,6 @@ def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.
     return res
 
 
-@log('\nНачальный опорный план, найденный методом северо-западного угла:\n{result}')
 def get_start_plan_by_north_west_corner_method(data: TransportationProblemData) -> np.ndarray:
     """Получить начальный опорный план методом северо-западного угла."""
     res = np.zeros((data.m, data.n))
@@ -84,14 +81,12 @@ def get_start_plan_by_north_west_corner_method(data: TransportationProblemData) 
     return res
 
 
-@log('Вырожденный план: {result}')
 def is_degenerate_plan(x: np.ndarray) -> bool:
     """Проверка плана на вырожденность."""
     m, n = x.shape
     return True if np.count_nonzero(x) != m + n - 1 else False
 
 
-@log('Цикл пересчета: {result}')
 def find_cycle_path(x: np.ndarray, start_pos: Tuple[int, int]) -> List[Tuple[int, int]]:
     def get_posible_moves(bool_table: np.ndarray, path: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
         posible_moves = np.full(bool_table.shape, False)
@@ -134,7 +129,6 @@ def find_cycle_path(x: np.ndarray, start_pos: Tuple[int, int]) -> List[Tuple[int
         res.append(posible_moves[0])
 
 
-@log('Величина пересчета: {result}\n\nПлан после пересчета:\n{args[0]}')
 def recalculate_plan(x: np.ndarray, cycle_path: List[Tuple[int, int]]) -> int:
     """Пересчитать план. Возвращает величину пересчета."""
     o = np.min([x[i][j] for i, j in cycle_path[1:-1:2]])
@@ -168,7 +162,6 @@ def recalculate_plan(x: np.ndarray, cycle_path: List[Tuple[int, int]]) -> int:
     return o
 
 
-@log('\nДелаем начальный опорный план невырожденным:\n{args[0]}')
 def make_start_plan_non_degenerate(x: np.ndarray) -> None:
     m, n = x.shape
 
