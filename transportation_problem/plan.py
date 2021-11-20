@@ -2,11 +2,10 @@ from typing import List, Tuple
 
 import numpy as np
 
-from report import get_html_report, save_html_string_to_file
-from TransportationProblemData import TransportationProblemData
+from .Data import Data
 
 
-def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.ndarray:
+def get_start_plan_by_min_element_method(data: Data) -> np.ndarray:
     """Получить начальный опорный план методом минимального элемента."""
     def get_min_element_position(matrix: np.ndarray) -> Tuple[int, int]:
         """Получить позицию минимального элемента матрицы."""
@@ -51,7 +50,7 @@ def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.
     return res
 
 
-def get_start_plan_by_north_west_corner_method(data: TransportationProblemData) -> np.ndarray:
+def get_start_plan_by_north_west_corner_method(data: Data) -> np.ndarray:
     """Получить начальный опорный план методом северо-западного угла."""
     res = np.zeros((data.m, data.n))
 
@@ -173,72 +172,3 @@ def make_start_plan_non_degenerate(x: np.ndarray) -> None:
                             x[i - 1][j] = np.nan
 
                         break
-
-
-def solve_transportation_problem(data: TransportationProblemData, use_nw_corner_method: bool = False) -> str:
-    report_list = ['Дано:', (data.c, data.a, data.b), '']
-
-    try:
-        diff = data.get_supply_demand_difference()
-        report_list.append(f'Разница между предложением и спросом: {diff}')
-        report_list.append(f'Условие равновесия: {True if diff == 0 else False}')
-
-        if diff < 0:
-            data.add_dummy_supplier(-diff)
-            report_list.extend([f'Добавлен фиктивный поставщик с обьемом: {-diff}', (data.c, data.a, data.b), ''])
-        elif diff > 0:
-            data.add_dummy_customer(diff)
-            report_list.extend([f'Добавлен фиктивный потребитель с обьемом: {diff}', (data.c, data.a, data.b), ''])
-
-        if use_nw_corner_method:
-            x = get_start_plan_by_north_west_corner_method(data)
-            report_list.extend(['Начальный опорный план, найденный методом северо-западного угла:',
-                                (x.copy(), data.a, data.b)])
-        else:
-            x = get_start_plan_by_min_element_method(data)
-            report_list.extend(['Начальный опорный план, полученный методом минимального элемента:',
-                                (x.copy(), data.a, data.b)])
-
-        check_res = is_degenerate_plan(x)
-        report_list.extend([f'Вырожденный план: {check_res}'])
-        if check_res:
-            make_start_plan_non_degenerate(x)
-            report_list.extend(['', 'Делаем начальный опорный план невырожденным:', (x.copy(), data.a, data.b)])
-
-        while True:
-            cost = data.calculate_cost(x)
-            report_list.append(f'Целевая функция: {cost}')
-
-            p = data.calculate_potentials(x)
-            report_list.append(f'Потенциалы: {p}')
-            report_list.append((data.c, p, x.copy()))
-
-            check_res = data.is_plan_optimal(x, p)
-            report_list.append(f'Оптимальный план: {check_res}')
-            if check_res:
-                report_list.extend(['', 'Ответ:', (x.copy(), data.a, data.b), f'Целевая функция: {cost}'])
-                raise Exception()
-
-            cycle_path = find_cycle_path(x, data.get_best_free_cell(x, p))
-            report_list.append(f'Цикл пересчета: {cycle_path}')
-            report_list.append((x.copy(), cycle_path, data.a, data.b))
-
-            o = recalculate_plan(x, cycle_path)
-            report_list.extend([f'Величина пересчета: {o}', '', 'План после пересчета:', (x.copy(), data.a, data.b)])
-
-    finally:
-        return get_html_report(report_list)
-
-
-if __name__ == '__main__':
-    data = TransportationProblemData(
-        np.array([12, 30, 13]),
-        np.array([23, 40, 12, 32]),
-        np.array([
-            [64, 32, 45, 12],
-            [32, 78, 23, 90],
-            [88, 67, 10, 32],
-        ]),
-    )
-
-    save_html_string_to_file(solve_transportation_problem(data), 'report.html')

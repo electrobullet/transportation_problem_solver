@@ -3,7 +3,7 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 
 
-class TransportationProblemData:
+class Data:
     """
     a - обьемы поставщиков;\n
     b - обьемы потребителей;\n
@@ -88,4 +88,4 @@ class TransportationProblemData:
         return free_cells[np.argmax([p['a'][i] + p['b'][j] - self.c[i][j] for i, j in free_cells])]
 
     def __str__(self) -> str:
-        return f'a: {self.a}\nb: {self.b}\nc:\n{self.c}'
+        return f'a: {self.a}\nb: {self.b}\n\nc:\n{self.c}\n\nr[a]: {self.r["a"]}\nr[b]: {self.r["b"]}'

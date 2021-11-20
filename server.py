@@ -4,10 +4,8 @@ from flask.templating import render_template_string
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, FieldList, StringField, SubmitField
 
+import transportation_problem as tp
 from config import Config
-from report import insert_html_into_template
-from TransportationProblemData import TransportationProblemData
-from utils import solve_transportation_problem
 
 
 class SetSizeForm(FlaskForm):
@@ -74,10 +72,14 @@ def get_report():
     c = np.array(c).reshape(len(a), len(b))
     use_nw_corner_method = True if request.form.get('nw_field') == 'y' else False
 
-    data = TransportationProblemData(a, b, c)
-    html_report = solve_transportation_problem(data, use_nw_corner_method)
+    html_report = tp.report.solve(tp.Data(a, b, c), use_nw_corner_method)
 
-    return render_template_string(insert_html_into_template(html_report, 'templates/base.html'), title='Report')
+    with open('templates/base.html', encoding='utf-8') as f:
+        template = f.readlines()
+
+    html_report = ''.join(template).replace('{% block content %}{% endblock %}', html_report)
+
+    return render_template_string(html_report, title='Report')
 
 
 if __name__ == '__main__':
