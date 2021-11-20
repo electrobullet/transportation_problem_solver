@@ -20,6 +20,9 @@ class TransportationProblemData:
         self.c = c
         self.r = r if r is not None else {'a': np.full(self.m, 0), 'b': np.full(self.n, 0)}
 
+        self.has_dummy_row = False
+        self.has_dummy_column = False
+
     @property
     def m(self) -> int:
         """Количество поставщиков (строк матрицы c)."""
@@ -40,11 +43,17 @@ class TransportationProblemData:
         self.c = np.row_stack((self.c, e))
         self.a = np.append(self.a, volume)
 
+        if np.all(e == 0):
+            self.has_dummy_row = True
+
     def add_dummy_customer(self, volume: int) -> None:
         """Добавить фиктивного потребителя."""
         e = np.ones(self.m) * self.r['a']
         self.c = np.column_stack((self.c, e))
         self.b = np.append(self.b, volume)
+
+        if np.all(e == 0):
+            self.has_dummy_column = True
 
     def calculate_cost(self, x: np.ndarray) -> float:
         """Подсчет стоимости (целевой функции)."""

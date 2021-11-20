@@ -21,15 +21,10 @@ def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.
     b = data.b.copy()
     c = data.c.copy()
 
-    has_dummy_row = False
-    has_dummy_column = False
-
-    if sum(c[-1]) == 0:
+    if data.has_dummy_row:
         c[-1] = np.inf
-        has_dummy_row = True
-    elif sum(c[:, -1]) == 0:
+    elif data.has_dummy_column:
         c[:, -1] = np.inf
-        has_dummy_column = True
 
     while sum(a) + sum(b) != 0:
         i, j = get_min_element_position(c)
@@ -48,9 +43,9 @@ def get_start_plan_by_min_element_method(data: TransportationProblemData) -> np.
             c[:, j] = np.inf
 
         if np.min(c) == np.inf:
-            if has_dummy_row:
+            if data.has_dummy_row:
                 c[-1] = 0
-            elif has_dummy_column:
+            elif data.has_dummy_column:
                 c[:, -1] = 0
 
     return res
