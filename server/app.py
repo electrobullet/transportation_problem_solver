@@ -1,11 +1,11 @@
 import numpy as np
+import transportation_problem as tp
 from flask import Flask, redirect, render_template, request, url_for
 from flask.templating import render_template_string
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, FieldList, StringField, SubmitField
 
-import transportation_problem as tp
-from config import Config
+from .config import Config
 
 
 class SetSizeForm(FlaskForm):
@@ -74,13 +74,9 @@ def get_report():
 
     html_report = tp.report.solve(tp.Data(a, b, c), use_nw_corner_method)
 
-    with open('templates/base.html', encoding='utf-8') as f:
+    with open('server/templates/base.html', encoding='utf-8') as f:
         template = f.readlines()
 
     html_report = ''.join(template).replace('{% block content %}{% endblock %}', html_report)
 
     return render_template_string(html_report, title='Report')
-
-
-if __name__ == '__main__':
-    app.run()
