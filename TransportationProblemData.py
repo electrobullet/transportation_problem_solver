@@ -14,6 +14,7 @@ class TransportationProblemData:
     (все значения в ед. товара)
     """
 
+    @log('Дано:\na: {args[1]}\nb: {args[2]}\nc:\n{args[3]}\n')
     def __init__(
         self, a: np.array, b: np.array, c: np.array, r: Optional[Dict[str, np.array]] = None,
     ) -> None:

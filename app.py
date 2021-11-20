@@ -5,8 +5,9 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, FieldList, StringField, SubmitField
 
 from config import Config
+from report import insert_html_into_template
 from TransportationProblemData import TransportationProblemData
-from utils import get_report_html, solve_transportation_problem
+from utils import solve_transportation_problem
 
 
 class SetSizeForm(FlaskForm):
@@ -34,7 +35,7 @@ def set_size():
     if form.validate_on_submit():
         return redirect(url_for('set_data', m=form.m_field.data, n=form.n_field.data))
 
-    return render_template('set_size.html', title='Step 1', form=form)
+    return render_template('set_size.html', title='Set Size', form=form)
 
 
 @app.route('/data', methods=['GET', 'POST'])
@@ -51,7 +52,7 @@ def set_data():
     if form.validate_on_submit():
         return redirect(url_for('get_report'), code=307)
 
-    return render_template('set_data.html', title='Step 2', form=form)
+    return render_template('set_data.html', title='Set Data', form=form)
 
 
 @app.route('/report', methods=['GET', 'POST'])
@@ -74,9 +75,9 @@ def get_report():
     use_nw_corner_method = True if request.form.get('nw_field') == 'y' else False
 
     data = TransportationProblemData(a, b, c)
-    report = solve_transportation_problem(data, use_nw_corner_method)
+    html_report = solve_transportation_problem(data, use_nw_corner_method)
 
-    return render_template_string(get_report_html(report), title='Report')
+    return render_template_string(insert_html_into_template(html_report, 'templates/base.html'), title='Report')
 
 
 if __name__ == '__main__':
