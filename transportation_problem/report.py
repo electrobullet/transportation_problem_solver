@@ -37,7 +37,12 @@ def solve(data: Data, use_nw_corner_method: bool = False) -> str:
         report_list.extend([f'Вырожденный план: {check_res}'])
         if check_res:
             make_start_plan_non_degenerate(x)
-            report_list.extend(['', 'Делаем начальный опорный план невырожденным:', (x.copy(), data.a, data.b)])
+            report_list.extend([
+                '',
+                'Делаем начальный опорный план невырожденным:',
+                'ε - очень малое положительное число',
+                (x.copy(), data.a, data.b),
+            ])
 
         while True:
             cost = data.calculate_cost(x)
@@ -96,7 +101,12 @@ def report_list_to_html(report_list: List[Any]) -> str:
                     elif j == 0 and i > 0:
                         html_report.append(f'<td style="text-align: left;">a{i} = {a[i-1]}</td>')
                     else:
-                        html_report.append(f'<td>{matrix[i-1][j-1]}</td>')
+                        x = matrix[i-1][j-1]
+
+                        if np.isnan(x):
+                            x = 'ε'
+
+                        html_report.append(f'<td>{x}</td>')
 
                 html_report.append('</tr>')
 
