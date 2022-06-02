@@ -9,3 +9,7 @@ table{
 td{
     border: 1px solid black;
 }
+
+a{
+    margin-right: 20px;
+}
