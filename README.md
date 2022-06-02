@@ -1,2 +1,5 @@
 # transportation_problem_solver
-Check it out: https://transportation-problem-solver.herokuapp.com/
+Курсовая работа по дисциплине "Математическое программирование".  
+Тема: Разработка ПО для решения транспортной задачи линейного программирования.
+
+Ссылка на сайт: https://transportation-problem-solver.herokuapp.com/
